@@ -98,7 +98,7 @@ class WireMetadata(Metadata):
     detectors: List[str]
     bpms_before_wire: Optional[List[str]] = None
     bpms_after_wire: Optional[List[str]] = None
-
+    type: str
 
 class Wire(Device):
     controls_information: SerializeAsAny[WireControlInformation]
