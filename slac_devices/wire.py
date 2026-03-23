@@ -1,14 +1,18 @@
 
 from pydantic import (
+    BeforeValidator,
     BaseModel,
     SerializeAsAny,
+    TypeAdapter,
     field_validator,
     conint,
     ValidationError,
 )
 from typing import (
+    Annotated,
     Dict,
     List,
+    Literal,
     Optional,
 )
 from slac_devices.device import (
@@ -20,6 +24,21 @@ from slac_devices.device import (
 from epics import PV
 
 EPICS_ERROR_MESSAGE = "Unable to connect to EPICS."
+
+
+def _normalize_plane(v: object) -> object:
+    if isinstance(v, str):
+        return v.strip().lower()
+    return v
+
+
+Plane = Literal["x", "y", "u"]
+NormalizedPlane = Annotated[Plane, BeforeValidator(_normalize_plane)]
+PLANE_ADAPTER = TypeAdapter(NormalizedPlane)
+
+
+def _validate_plane(plane: str) -> Plane:
+    return PLANE_ADAPTER.validate_python(plane)
 
 
 class RangeModel(BaseModel):
@@ -43,17 +62,6 @@ class BooleanModel(BaseModel):
 
 class IntegerModel(BaseModel):
     value: conint(strict=True)
-
-
-class PlaneModel(BaseModel):
-    plane: str
-
-    @field_validator("plane")
-    def x_y_u_plane(cls, v):
-        if v.lower() in ["x", "y", "u"]:
-            return v
-        else:
-            raise ValueError("basePlane must be X, Y, or U")
 
 
 class WirePVSet(PVSet):
@@ -102,6 +110,7 @@ class WireMetadata(Metadata):
     detectors: List[str]
     bpms_before_wire: Optional[List[str]] = None
     bpms_after_wire: Optional[List[str]] = None
+    type: str
 
 
 class Wire(Device):
@@ -110,35 +119,6 @@ class Wire(Device):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-    """ Decorators """
-
-    def check_state(f):
-        """Decorator to only allow transitions in 'Initialized' state"""
-
-        def decorated(self, *args, **kwargs):
-            if self.initialize_status is not True:
-                print(f"Unable to perform action, {self} not in Initialized state")
-                return
-            return f(self, *args, **kwargs)
-
-        return decorated
-
-    def check_speed(f):
-        """Check that wire speed is sufficient for beam rate and sample size"""
-
-        def decorated(self, *args, **kwargs):
-            wire_range = self.wire.x_range[1] - self.wire.x_range[0]
-            speed_calc = int(self.wire.beam_rate * (wire_range / self.wire.scan_pulses))
-            speed_check = (
-                int(self.wire.speed_min) < speed_calc < int(self.wire.speed_max)
-            )
-            if speed_check is not True:
-                print(f"Unable to perform action. {self} failed speed check")
-                return
-            return f(self, *args, **kwargs)
-
-        return decorated
 
     def abort_scan(self):
         """Aborts active wire scan"""
@@ -224,19 +204,19 @@ class Wire(Device):
 
     def set_range(self, plane: str, val: list) -> None:
         try:
-            PlaneModel(value=plane)
+            plane_name = _validate_plane(plane)
             RangeModel(value=val)
-            property_name = plane.lower() + "_range"
+            property_name = plane_name + "_range"
             setattr(self, property_name, val)
         except ValidationError as e:
             print("Plane must be X, Y, or U:", e)
 
     def set_inner_range(self, plane: str, val: int) -> None:
         try:
-            PlaneModel(value=plane)
+            plane_name = _validate_plane(plane)
             IntegerModel(value=val)
-            property_name = plane.lower() + "_wire_inner"
-            outer_property = plane.lower() + "_wire_outer"
+            property_name = plane_name + "_wire_inner"
+            outer_property = plane_name + "_wire_outer"
             outer_range = getattr(self, outer_property)
             if val < outer_range:
                 setattr(self, property_name, val)
@@ -248,10 +228,10 @@ class Wire(Device):
 
     def set_outer_range(self, plane: str, val: int) -> None:
         try:
-            PlaneModel(value=plane)
+            plane_name = _validate_plane(plane)
             IntegerModel(value=val)
-            property_name = plane.lower() + "_wire_outer"
-            inner_property = plane.lower() + "_wire_inner"
+            property_name = plane_name + "_wire_outer"
+            inner_property = plane_name + "_wire_inner"
             inner_range = getattr(self, inner_property)
             if val > inner_range:
                 setattr(self, property_name, val)
@@ -315,13 +295,24 @@ class Wire(Device):
 
     def use(self, plane: str, val: bool) -> None:
         try:
-            PlaneModel(value=plane)
+            plane_name = _validate_plane(plane)
             BooleanModel(value=val)
         except ValidationError as e:
             print("Plane must be X, Y, or U:", e)
             return
-        property_name = "use_" + plane.lower() + "_wire"
+        property_name = "use_" + plane_name + "_wire"
         setattr(self, property_name, val)
+
+    def _active_profiles(self) -> List[str]:
+        """Returns the active scan profiles among X, Y, and U."""
+        active_profiles: List[str] = []
+        if bool(self.use_x_wire):
+            active_profiles.append("x")
+        if bool(self.use_y_wire):
+            active_profiles.append("y")
+        if bool(self.use_u_wire):
+            active_profiles.append("u")
+        return active_profiles
 
     @property
     def use_x_wire(self):

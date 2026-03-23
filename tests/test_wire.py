@@ -154,6 +154,12 @@ class WireTest(TestCase):
         self.assertEqual(inspect.ismethod(self.wire.set_outer_range), True)
         self.assertEqual(inspect.ismethod(self.wire.set_range), True)
         self.assertEqual(inspect.ismethod(self.wire.use), True)
+        self.assertEqual(inspect.ismethod(self.wire._active_profiles), True)
+
+    def test_active_profiles_returns_enabled_planes(self):
+        self.mock_pv.get.side_effect = [1, 0, True]
+        self.assertEqual(self.wire._active_profiles(), ["x", "u"])
+        self.mock_pv.get.side_effect = None
 
     def test_name(self) -> None:
         """Test we get expected default"""
