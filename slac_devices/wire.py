@@ -70,6 +70,7 @@ class WirePVSet(PVSet):
     start_scan: PV
     temperature: Optional[PV] = None
     timeout: Optional[PV] = None
+    torque_enable: Optional[PV] = None
     use_u_wire: PV
     use_x_wire: PV
     use_y_wire: PV
@@ -273,6 +274,16 @@ class Wire(Device):
     def timeout(self, val: bool) -> None:
         validate_boolean(val)
         self.controls_information.PVs.timeout.put(value=val)
+
+    @property
+    def torque_enable(self):
+        """Returns the state of the motor torque enable."""
+        return self.controls_information.PVs.torque_enable.get()
+    
+    @torque_enable.setter
+    def torque_enable(self, val: bool) -> None:
+        validate_boolean(val)
+        self.controls_information.PVs.torque_enable.put(value=int(val))
 
     @property
     def x_size(self):
