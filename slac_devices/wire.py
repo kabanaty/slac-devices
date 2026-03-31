@@ -102,6 +102,7 @@ class WireMetadata(Metadata):
     type: str
     wire_type: str
 
+
 class Wire(Device):
     controls_information: SerializeAsAny[WireControlInformation]
     metadata: SerializeAsAny[WireMetadata]
