@@ -40,6 +40,8 @@ class BPMControlInformation(ControlInformation):
 
 # TODO
 class BPMMetadata(Metadata):
+    beampath: List[str]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

@@ -100,6 +100,7 @@ class WireMetadata(Metadata):
     bpms_before_wire: Optional[List[str]] = None
     bpms_after_wire: Optional[List[str]] = None
     type: str
+    beampath: List[str]
     wire_type: str
 
 

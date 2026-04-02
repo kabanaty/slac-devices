@@ -54,6 +54,8 @@ class LBLMControlInformation(ControlInformation):
 
 
 class LBLMMetadata(Metadata):
+    beampath: List[str]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

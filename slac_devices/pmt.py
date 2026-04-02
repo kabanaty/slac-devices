@@ -34,6 +34,8 @@ class PMTControlInformation(ControlInformation):
 
 
 class PMTMetadata(Metadata):
+    beampath: List[str]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
