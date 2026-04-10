@@ -62,8 +62,10 @@ class WirePVSet(PVSet):
     motor: PV
     motor_rbv: PV
     mps_speed: PV
+    on_status: PV
     retract: Optional[PV] = None
     scan_pulses: PV
+    scan_status: Optional[PV] = None
     speed: PV
     speed_max: PV
     speed_min: PV
