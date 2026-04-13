@@ -198,7 +198,7 @@ class Wire(Device):
         """Returns the wire scanner install angle in degrees."""
         return self.controls_information.PVs.install_angle.get()
 
-    @property    
+    @property
     def motor(self):
         """Returns the readback from the MOTR PV"""
         return self.controls_information.PVs.motor.get()
