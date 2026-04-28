@@ -127,3 +127,18 @@ class TestAreaReader(unittest.TestCase):
 
         self.assertIsInstance(result, Area)
         self.assertIsNone(result.bpms)
+
+    def test_create_area_ignores_unsupported_device_types(self):
+        with patch("slac_devices.reader.slac_db.get_device") as mock_get_device:
+            mock_get_device.return_value = {
+                "tcavs": {
+                    "TCAV0": {
+                        "metadata": {"area": "LI30"}
+                    }
+                }
+            }
+            result = create_area(area="LI30")
+
+        self.assertIsInstance(result, Area)
+        self.assertIsNone(result.bpms)
+        self.assertIsNone(result.magnets)

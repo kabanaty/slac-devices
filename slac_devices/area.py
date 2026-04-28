@@ -31,7 +31,7 @@ from slac_devices.lblm import (
 from slac_devices.pmt import PMT, PMTCollection
 
 from pydantic import SerializeAsAny, Field, field_validator
-from pydantic import ValidationError
+from pydantic import ValidationError, ValidationInfo
 
 
 def _prune_invalid_devices(
@@ -41,6 +41,13 @@ def _prune_invalid_devices(
     device_class,
 ) -> Union[Dict[str, Any], None]:
     if not device_data:
+        return None
+
+    if not isinstance(device_data, dict):
+        print(
+            f"Skipping {device_type} collection in {area_name}: "
+            + "collection payload is not a dictionary."
+        )
         return None
 
     valid_devices = {}
@@ -56,7 +63,7 @@ def _prune_invalid_devices(
         payload_copy.pop("name", None)
         try:
             device_class(name=name, **payload_copy)
-        except (ValidationError, TypeError) as field_error:
+        except (ValidationError, TypeError, Exception) as field_error:
             print(
                 f"Skipping invalid {device_type} {name} in {area_name}: {field_error}"
             )
@@ -146,13 +153,19 @@ class Area(slac_devices.BaseModel):
             **kwargs,
         )
 
+    @classmethod
+    def _area_name_from_info(cls, info: ValidationInfo) -> str:
+        if info and info.data and "name" in info.data:
+            return str(info.data["name"])
+        return "<unknown>"
+
     @field_validator(
         "magnet_collection",
         mode="before",
     )
-    def validate_magnets(cls, v: Dict[str, Any]):
+    def validate_magnets(cls, v: Dict[str, Any], info: ValidationInfo):
         valid_magnets = _prune_invalid_devices(
-            area_name="<unknown>",
+            area_name=cls._area_name_from_info(info),
             device_type="magnets",
             device_data=v,
             device_class=Magnet,
@@ -165,9 +178,9 @@ class Area(slac_devices.BaseModel):
         "screen_collection",
         mode="before",
     )
-    def validate_screens(cls, v: Dict[str, Any]):
+    def validate_screens(cls, v: Dict[str, Any], info: ValidationInfo):
         valid_screens = _prune_invalid_devices(
-            area_name="<unknown>",
+            area_name=cls._area_name_from_info(info),
             device_type="screens",
             device_data=v,
             device_class=Screen,
@@ -180,9 +193,9 @@ class Area(slac_devices.BaseModel):
         "wire_collection",
         mode="before",
     )
-    def validate_wires(cls, v: Dict[str, Any]):
+    def validate_wires(cls, v: Dict[str, Any], info: ValidationInfo):
         valid_wires = _prune_invalid_devices(
-            area_name="<unknown>",
+            area_name=cls._area_name_from_info(info),
             device_type="wires",
             device_data=v,
             device_class=Wire,
@@ -195,9 +208,9 @@ class Area(slac_devices.BaseModel):
         "bpm_collection",
         mode="before",
     )
-    def validate_bpms(cls, v: Dict[str, Any]):
+    def validate_bpms(cls, v: Dict[str, Any], info: ValidationInfo):
         valid_bpms = _prune_invalid_devices(
-            area_name="<unknown>",
+            area_name=cls._area_name_from_info(info),
             device_type="bpms",
             device_data=v,
             device_class=BPM,
@@ -210,9 +223,9 @@ class Area(slac_devices.BaseModel):
         "lblm_collection",
         mode="before",
     )
-    def validate_lblms(cls, v: Dict[str, Any]):
+    def validate_lblms(cls, v: Dict[str, Any], info: ValidationInfo):
         valid_lblms = _prune_invalid_devices(
-            area_name="<unknown>",
+            area_name=cls._area_name_from_info(info),
             device_type="lblms",
             device_data=v,
             device_class=LBLM,
@@ -225,9 +238,9 @@ class Area(slac_devices.BaseModel):
         "pmt_collection",
         mode="before",
     )
-    def validate_pmts(cls, v: Dict[str, Any]):
+    def validate_pmts(cls, v: Dict[str, Any], info: ValidationInfo):
         valid_pmts = _prune_invalid_devices(
-            area_name="<unknown>",
+            area_name=cls._area_name_from_info(info),
             device_type="pmts",
             device_data=v,
             device_class=PMT,

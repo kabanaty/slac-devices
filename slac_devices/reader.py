@@ -14,6 +14,16 @@ from slac_devices.area import Area
 from slac_devices.beampath import Beampath
 
 
+_AREA_SUPPORTED_DEVICE_TYPES = {
+    "magnets",
+    "screens",
+    "wires",
+    "bpms",
+    "lblms",
+    "pmts",
+}
+
+
 def create_magnet(
     area: str = None, name: str = None
 ) -> Union[None, Magnet, MagnetCollection]:
@@ -151,8 +161,18 @@ def create_area(area: str = None) -> Union[None, Area]:
     yaml_data = slac_db.get_device(area=area)
     if not yaml_data:
         return None
+
+    filtered_yaml_data = {}
+    for device_type, device_payload in yaml_data.items():
+        if device_type not in _AREA_SUPPORTED_DEVICE_TYPES:
+            print(
+                f"Skipping unsupported device type {device_type} in area {area}."
+            )
+            continue
+        filtered_yaml_data[device_type] = device_payload
+
     try:
-        return Area(name=area, **yaml_data)
+        return Area(name=area, **filtered_yaml_data)
     except ValidationError as field_error:
         print("Error trying to create area", area, " : ", field_error)
         return None
