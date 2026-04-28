@@ -29,6 +29,7 @@ from slac_devices.lblm import (
     LBLMCollection,
 )
 from slac_devices.pmt import PMT, PMTCollection
+from slac_devices.tcav import TCAV, TCAVCollection
 
 from pydantic import SerializeAsAny, Field, field_validator
 from pydantic import ValidationError, ValidationInfo
@@ -140,6 +141,15 @@ class Area(slac_devices.BaseModel):
         alias="pmts",
         default=None,
     )
+    tcav_collection: Optional[
+        Union[
+            SerializeAsAny[TCAVCollection],
+            None,
+        ]
+    ] = Field(
+        alias="tcavs",
+        default=None,
+    )
 
     def __init__(
         self,
@@ -151,6 +161,36 @@ class Area(slac_devices.BaseModel):
             name=name,
             *args,
             **kwargs,
+        )
+
+    def _device_counts(self) -> Dict[str, int]:
+        collection_map = {
+            "magnets": (self.magnet_collection, "magnets"),
+            "screens": (self.screen_collection, "screens"),
+            "wires": (self.wire_collection, "wires"),
+            "bpms": (self.bpm_collection, "bpms"),
+            "lblms": (self.lblm_collection, "lblms"),
+            "pmts": (self.pmt_collection, "pmts"),
+            "tcavs": (self.tcav_collection, "tcavs"),
+        }
+
+        counts = {}
+        for device_type, (collection, attr_name) in collection_map.items():
+            if collection is None:
+                counts[device_type] = 0
+                continue
+            devices = getattr(collection, attr_name, None) or {}
+            counts[device_type] = len(devices)
+        return counts
+
+    def __repr__(self) -> str:
+        counts = self._device_counts()
+        populated_types = [
+            device_type for device_type, count in counts.items() if count > 0
+        ]
+        return (
+            f"Area(name={self.name!r}, total_devices={sum(counts.values())}, "
+            + f"counts={counts}, populated_types={populated_types})"
         )
 
     @classmethod
@@ -248,6 +288,21 @@ class Area(slac_devices.BaseModel):
         if not valid_pmts:
             return None
         return PMTCollection(pmts=valid_pmts)
+
+    @field_validator(
+        "tcav_collection",
+        mode="before",
+    )
+    def validate_tcavs(cls, v: Dict[str, Any], info: ValidationInfo):
+        valid_tcavs = _prune_invalid_devices(
+            area_name=cls._area_name_from_info(info),
+            device_type="tcavs",
+            device_data=v,
+            device_class=TCAV,
+        )
+        if not valid_tcavs:
+            return None
+        return TCAVCollection(tcavs=valid_tcavs)
 
     @property
     def magnets(
@@ -351,6 +406,23 @@ class Area(slac_devices.BaseModel):
             print("Area does not contain pmts.")
             return None
 
+    @property
+    def tcavs(
+        self,
+    ) -> Union[
+        Dict[str, TCAV],
+        None,
+    ]:
+        """
+        A Dict[str, TCAV] for this area, where the dict keys are tcav names.
+        If no tcavs exist for this area, this property is None.
+        """
+        if self.tcav_collection:
+            return self.tcav_collection.tcavs
+        else:
+            print("Area does not contain tcavs.")
+            return None
+
     def does_magnet_exist(
         self,
         magnet_name: str = None,
@@ -386,3 +458,9 @@ class Area(slac_devices.BaseModel):
         pmt_name: str = None,
     ) -> bool:
         return pmt_name in self.pmts
+
+    def does_tcav_exist(
+        self,
+        tcav_name: str = None,
+    ) -> bool:
+        return tcav_name in self.tcavs

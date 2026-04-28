@@ -128,12 +128,36 @@ class TestAreaReader(unittest.TestCase):
         self.assertIsInstance(result, Area)
         self.assertIsNone(result.bpms)
 
-    def test_create_area_ignores_unsupported_device_types(self):
+    @patch("epics.PV.get_ctrlvars", new_callable=MagicMock)
+    def test_create_area_supports_tcavs(self, mock_get_ctrlvars):
+        mock_get_ctrlvars.return_value = {"enum_strs": ("OFF", "ON")}
         with patch("slac_devices.reader.slac_db.get_device") as mock_get_device:
             mock_get_device.return_value = {
                 "tcavs": {
                     "TCAV0": {
-                        "metadata": {"area": "LI30"}
+                        "controls_information": {
+                            "PVs": {
+                                "amplitude": "TCAV:LI30:TCAV0:AMPLITUDE",
+                                "phase": "TCAV:LI30:TCAV0:PHASE",
+                                "rf_enable": "TCAV:LI30:TCAV0:RF_ENABLE",
+                                "amplitude_fbenb": "TCAV:LI30:TCAV0:AMPL_FB_ENB",
+                                "phase_fbenb": "TCAV:LI30:TCAV0:PHASE_FB_ENB",
+                                "amplitude_fbst": "TCAV:LI30:TCAV0:AMPL_FB_ST",
+                                "phase_fbst": "TCAV:LI30:TCAV0:PHASE_FB_ST",
+                                "mode_config": "TCAV:LI30:TCAV0:MODE_CONFIG",
+                                "amplitude_wocho": "TCAV:LI30:TCAV0:AMPL_WOCHO",
+                                "phase_avgnt": "TCAV:LI30:TCAV0:PHASE_AVGNT",
+                            },
+                            "control_name": "TCAV:LI30:TCAV0",
+                        },
+                        "metadata": {
+                            "area": "LI30",
+                            "beam_path": ["CU_HXR"],
+                            "sum_l_meters": 1000.0,
+                            "type": "TCAV",
+                            "l_eff": 1.2,
+                            "rf_freq": 2856.0,
+                        },
                     }
                 }
             }
@@ -142,3 +166,5 @@ class TestAreaReader(unittest.TestCase):
         self.assertIsInstance(result, Area)
         self.assertIsNone(result.bpms)
         self.assertIsNone(result.magnets)
+        self.assertIsNotNone(result.tcavs)
+        self.assertIn("TCAV0", result.tcavs)
