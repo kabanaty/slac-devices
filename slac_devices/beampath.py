@@ -10,6 +10,7 @@ from typing import (
 from slac_devices.area import (
     Area,
 )
+from slac_devices.device import Device
 from slac_devices.magnet import Magnet
 from slac_devices.screen import Screen
 from slac_devices.wire import Wire
@@ -124,9 +125,7 @@ class Beampath(slac_devices.BaseModel):
             f"populated_types={populated_types})"
         )
 
-    def find_device(
-        self, device_name: str
-    ) -> Optional[Tuple[str, str, Union[Magnet, Screen, Wire, BPM, LBLM, PMT, TCAV]]]:
+    def find_device(self, device_name: str) -> Optional[Tuple[str, str, Device]]:
         """
         Find a device by name across all areas in the beampath.
 
@@ -223,7 +222,7 @@ class Beampath(slac_devices.BaseModel):
 
     def get_all_devices(
         self,
-    ) -> Dict[str, Union[Magnet, Screen, Wire, BPM, LBLM, PMT, TCAV]]:
+    ) -> Dict[str, Device]:
         """Get all devices of all types across all areas, keyed by device name."""
         all_devices = {}
         all_devices.update(self.get_all_magnets())
@@ -273,6 +272,6 @@ class Beampath(slac_devices.BaseModel):
     @property
     def devices(
         self,
-    ) -> Dict[str, Union[Magnet, Screen, Wire, BPM, LBLM, PMT, TCAV]]:
+    ) -> Dict[str, Device]:
         """Get all devices of all types across all areas, keyed by device name."""
         return self.get_all_devices()
