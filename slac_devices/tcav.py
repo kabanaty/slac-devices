@@ -6,7 +6,6 @@ from pydantic import (
 )
 from typing import (
     Dict,
-    Union,
     Optional,
     List,
 )
@@ -259,14 +258,3 @@ class TCAVCollection(BaseModel):
             tcav.update({"name": name})
             v.update({name: tcav})
         return v
-
-    def _make_tcav_names_list_from_args(
-        self, args: Union[str, List[str], None]
-    ) -> List[str]:
-        tcav_names = args
-        if tcav_names:
-            if isinstance(tcav_names, str):
-                tcav_names = [args]
-        else:
-            tcav_names = list(self.tcavs.keys())
-        return tcav_names
