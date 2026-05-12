@@ -7,11 +7,9 @@ from epics import PV
 class LazyPV:
     """Wraps an EPICS PV name and defers connection until first use."""
 
-    __slots__ = ("_pvname", "_pv")
-
     def __init__(self, pvname: str):
-        object.__setattr__(self, "_pvname", pvname)
-        object.__setattr__(self, "_pv", None)
+        self._pvname = pvname
+        self._pv = None
 
     @property
     def pvname(self) -> str:
@@ -46,7 +44,7 @@ class LazyPV:
         return hash(self._pvname)
 
     def __repr__(self):
-        connected = self._pv is not None
+        connected = self._pv.connected if self._pv else False
         return f"LazyPV({self._pvname!r}, connected={connected})"
 
 
