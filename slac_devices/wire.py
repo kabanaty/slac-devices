@@ -96,11 +96,15 @@ class WireControlInformation(ControlInformation):
         super(WireControlInformation, self).__init__(*args, **kwargs)
 
 
+class TMITLossBPMs(BaseModel):
+    upstream: List[str]
+    downstream: List[str]
+
+
 class WireMetadata(Metadata):
     detectors: List[str]
     default_detector: str
-    bpms_before_wire: Optional[List[str]] = None
-    bpms_after_wire: Optional[List[str]] = None
+    tmitloss: Optional[TMITLossBPMs] = None
     type: str
     wire_type: str
 
