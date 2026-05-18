@@ -1,6 +1,7 @@
 from typing import Union, Optional
 from pydantic import ValidationError
 import slac_db
+import slac_db.db_to_yaml
 from slac_devices.screen import Screen, ScreenCollection
 from slac_devices.magnet import Magnet, MagnetCollection
 from slac_devices.wire import Wire, WireCollection
@@ -22,6 +23,28 @@ _AREA_SUPPORTED_DEVICE_TYPES = {
     "tcavs",
 }
 
+_CONSTRUCTOR_MAP = {
+    "magnets": Magnet,
+    "screens": Screen,
+    "wires": Wire,
+    "bpms": BPM,
+    "lblms": LBLM,
+    "pmts": PMT,
+    "tcavs": TCAV,
+}
+
+def create_device(name):
+    data = slac_db.db_to_yaml.get_device(name)
+    if data is None:
+        print(f"Unrecognized name for device={name}")
+        return None
+    device_type = data.pop("yaml_type")
+    constructor = _CONSTRUCTOR_MAP[device_type]
+    try:
+        return constructor(**data)
+    except ValidationError as field_error:
+        print(field_error)
+        return None
 
 def create_magnet(
     area: str = None, name: str = None
