@@ -176,7 +176,7 @@ class Magnet(Device):
 
     @bdes.setter
     def bdes(self, bval) -> None:
-        self.controls_information.PVs.bdes.put(value=bval)
+        self.controls_information.PVs.bdes.put(value=bval, wait=True)  # wait until PV has been set
 
     @property
     def ctrl(self) -> str:
@@ -210,8 +210,11 @@ class Magnet(Device):
     def read_tolerance(self) -> float:
         return self.metadata.read_tolerance
 
-    def is_bact_settled(self, b_tolerance: Optional[float] = 0.005) -> bool:
-        return abs(self.bdes) - abs(self.bact) < b_tolerance
+    def is_bact_settled(self, b_tolerance: Optional[float] = 0.001) -> bool:
+        if b_tolerance:
+            return abs(self.bdes - self.bact) < b_tolerance
+        else:
+            return abs(self.bdes - self.bact) < 0.001
 
     @check_options("TRIM")
     @check_state
@@ -296,7 +299,7 @@ class Magnet(Device):
         self.bdes = bval
         self.trim()
         time_when_trim_started = datetime.now()
-        while not self.is_bact_settled():
+        while not self.is_bact_settled(self.b_tolerance):
             # Timeout if magnet takes too long to settle
             if (
                 datetime.now() - time_when_trim_started
