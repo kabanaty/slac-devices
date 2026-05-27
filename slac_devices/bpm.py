@@ -110,7 +110,7 @@ class BPMCollection(BaseModel):
             for name, bpm in self.bpms.items():
                 address = f"{bpm.controls_information.control_name}:{suffix}"
                 try:
-                    data = buffer.get_data_buffer(address)
+                    data = buffer.get(address)
                 except (TypeError, BufferError):
                     data = None
                 yield name, data
