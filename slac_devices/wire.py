@@ -105,6 +105,7 @@ class WireMetadata(Metadata):
     detectors: List[str]
     default_detector: str
     tmitloss: Optional[TMITLossBPMs] = None
+    jitter_bpms: Optional[List[str]] = None
     type: str
     wire_type: str
 
