@@ -65,9 +65,11 @@ class LBLM(Device):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fast_buffer(self, buffer):
+    def fast_buffer(self, buffer, **kwargs):
         """Retrieve fast signal data from timing buffer"""
-        data = buffer.get_data_buffer(f"{self.controls_information.control_name}:FAST")
+        data = buffer.get_data_buffer(
+            f"{self.controls_information.control_name}:FAST", **kwargs
+        )
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data
@@ -108,17 +110,19 @@ class LBLM(Device):
         except ValidationError as e:
             print("Bypass must be a boolean:", e)
 
-    def i0_loss_buffer(self, buffer):
+    def i0_loss_buffer(self, buffer, **kwargs):
         """Retrieve I0 Loss data from timing buffer"""
-        data = buffer.get_data_buffer(self.controls_information.PVs.i0_loss.pvname)
+        data = buffer.get_data_buffer(
+            self.controls_information.PVs.i0_loss.pvname, **kwargs
+        )
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data
 
-    def gated_integral_buffer(self, buffer):
+    def gated_integral_buffer(self, buffer, **kwargs):
         """Get Gated Integral data from timing buffer"""
         data = buffer.get_data_buffer(
-            self.controls_information.PVs.gated_integral.pvname
+            self.controls_information.PVs.gated_integral.pvname, **kwargs
         )
         if data is None:
             raise BufferError("No data in buffer or PV not found")
