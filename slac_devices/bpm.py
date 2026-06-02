@@ -57,36 +57,27 @@ class BPM(Device):
         """Get TMIT value"""
         return self.controls_information.PVs.x.get()
 
-    def x_buffer(self, buffer, **kwargs):
+    def x_buffer(self, buffer: Buffer, **kwargs):
         """Retrieve X signal data from timing buffer"""
-        data = buffer.get(f"{self.controls_information.control_name}:X", **kwargs)
-        if data is None:
-            raise BufferError("No data in buffer or PV not found")
-        return data
+        return buffer.get(f"{self.controls_information.control_name}:X", **kwargs)
 
     @property
     def y(self):
         """Get TMIT value"""
         return self.controls_information.PVs.y.get()
 
-    def y_buffer(self, buffer, **kwargs):
+    def y_buffer(self, buffer: Buffer, **kwargs):
         """Retrieve Y signal data from timing buffer"""
-        data = buffer.get(f"{self.controls_information.control_name}:Y", **kwargs)
-        if data is None:
-            raise BufferError("No data in buffer or PV not found")
-        return data
+        return buffer.get(f"{self.controls_information.control_name}:Y", **kwargs)
 
     @property
     def tmit(self):
         """Get TMIT value"""
         return self.controls_information.PVs.tmit.get()
 
-    def tmit_buffer(self, buffer, **kwargs):
+    def tmit_buffer(self, buffer: Buffer, **kwargs):
         """Retrieve TMIT signal data from timing buffer"""
-        data = buffer.get(f"{self.controls_information.control_name}:TMIT", **kwargs)
-        if data is None:
-            raise BufferError("No data in buffer or PV not found")
-        return data
+        return buffer.get(f"{self.controls_information.control_name}:TMIT", **kwargs)
 
 
 class BPMCollection(BaseModel):

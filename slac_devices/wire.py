@@ -227,7 +227,7 @@ class Wire(Device):
         """Returns the on status of the wire scanner."""
         return self.controls_information.PVs.on_status.get()
 
-    def position_buffer(self, buffer, **kwargs):
+    def position_buffer(self, buffer: Buffer, **kwargs):
         return buffer.get(f"{self.controls_information.control_name}:POSN", **kwargs)
 
     def retract(self):
