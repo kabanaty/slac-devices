@@ -47,9 +47,7 @@ class PMT(Device):
 
     def qdcraw_buffer(self, buffer, **kwargs):
         """Retrieve QDCRAW signal data from timing buffer"""
-        data = buffer.get_data_buffer(
-            f"{self.controls_information.control_name}:QDCRAW", **kwargs
-        )
+        data = buffer.get(f"{self.controls_information.control_name}:QDCRAW", **kwargs)
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data

@@ -67,9 +67,7 @@ class LBLM(Device):
 
     def fast_buffer(self, buffer, **kwargs):
         """Retrieve fast signal data from timing buffer"""
-        data = buffer.get_data_buffer(
-            f"{self.controls_information.control_name}:FAST", **kwargs
-        )
+        data = buffer.get(f"{self.controls_information.control_name}:FAST", **kwargs)
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data
@@ -112,18 +110,14 @@ class LBLM(Device):
 
     def i0_loss_buffer(self, buffer, **kwargs):
         """Retrieve I0 Loss data from timing buffer"""
-        data = buffer.get_data_buffer(
-            self.controls_information.PVs.i0_loss.pvname, **kwargs
-        )
+        data = buffer.get(self.controls_information.PVs.i0_loss.pvname, **kwargs)
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data
 
     def gated_integral_buffer(self, buffer, **kwargs):
         """Get Gated Integral data from timing buffer"""
-        data = buffer.get_data_buffer(
-            self.controls_information.PVs.gated_integral.pvname, **kwargs
-        )
+        data = buffer.get(self.controls_information.PVs.gated_integral.pvname, **kwargs)
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data

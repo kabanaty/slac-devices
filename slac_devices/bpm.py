@@ -58,9 +58,7 @@ class BPM(Device):
 
     def x_buffer(self, buffer, **kwargs):
         """Retrieve X signal data from timing buffer"""
-        data = buffer.get_data_buffer(
-            f"{self.controls_information.control_name}:X", **kwargs
-        )
+        data = buffer.get(f"{self.controls_information.control_name}:X", **kwargs)
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data
@@ -72,9 +70,7 @@ class BPM(Device):
 
     def y_buffer(self, buffer, **kwargs):
         """Retrieve Y signal data from timing buffer"""
-        data = buffer.get_data_buffer(
-            f"{self.controls_information.control_name}:Y", **kwargs
-        )
+        data = buffer.get(f"{self.controls_information.control_name}:Y", **kwargs)
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data
@@ -86,9 +82,7 @@ class BPM(Device):
 
     def tmit_buffer(self, buffer, **kwargs):
         """Retrieve TMIT signal data from timing buffer"""
-        data = buffer.get_data_buffer(
-            f"{self.controls_information.control_name}:TMIT", **kwargs
-        )
+        data = buffer.get(f"{self.controls_information.control_name}:TMIT", **kwargs)
         if data is None:
             raise BufferError("No data in buffer or PV not found")
         return data
@@ -115,7 +109,7 @@ class BPMCollection(BaseModel):
         Args:
             buffer: An edef EventDefinition or BSABuffer object.
             suffix: PV suffix to read (e.g. "TMIT", "X", "Y").
-            **kwargs: Passed to buffer.get_data_buffer() (e.g. pad, retries).
+            **kwargs: Passed to buffer.get() (e.g. pad, retries).
 
         Returns:
             Dict mapping BPM name to data array, or None for unreachable BPMs.
@@ -125,7 +119,7 @@ class BPMCollection(BaseModel):
             for name, bpm in self.bpms.items():
                 address = f"{bpm.controls_information.control_name}:{suffix}"
                 try:
-                    data = buffer.get_data_buffer(address, **kwargs)
+                    data = buffer.get(address, **kwargs)
                 except (TypeError, BufferError):
                     data = None
                 yield name, data
