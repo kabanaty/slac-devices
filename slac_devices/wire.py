@@ -257,6 +257,48 @@ class Wire(Device):
     def set_range(self, plane: str, val: list) -> None:
         self._set_plane_range(plane, val)
 
+    def set_range_from_start(
+        self, plane: str, inner: int, range_width: int = 4000
+    ) -> None:
+        """Set scan range from a start position.
+
+        Parameters
+        ----------
+        plane : str
+            Plane identifier (X, Y, or U).
+        inner : int
+            Start position in stage microns.
+        range_width : int
+            Width of scan range in microns. Default 4000.
+        """
+        validate_plane(plane)
+        validate_integer(inner)
+        if range_width <= 0:
+            raise ValueError(f"range_width must be positive, got {range_width}")
+        self.set_range(plane, [inner, inner + range_width])
+
+    def center_range_on_mean(
+        self, plane: str, mean: float, range_width: int = 4000
+    ) -> None:
+        """Center scan range around a given position.
+
+        Parameters
+        ----------
+        plane : str
+            Plane identifier (X, Y, or U).
+        mean : float
+            Center position in stage microns.
+        range_width : int
+            Total width of scan range in microns. Default 4000.
+        """
+        validate_plane(plane)
+        if range_width <= 0:
+            raise ValueError(f"range_width must be positive, got {range_width}")
+        half = range_width // 2
+        inner = int(round(mean)) - half
+        outer = inner + range_width
+        self.set_range(plane, [inner, outer])
+
     @property
     def speed(self):
         """Returns the current calculated speed of the wire scanner."""

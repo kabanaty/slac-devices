@@ -1,6 +1,6 @@
 # import datetime
 from unittest import TestCase
-from unittest.mock import Mock, patch  # , PropertyMock
+from unittest.mock import Mock, patch, call  # , PropertyMock
 import inspect
 
 
@@ -270,3 +270,48 @@ class WireTest(TestCase):
         m = self.wire.metadata
         self.assertTrue(hasattr(m, "detectors"))
         self.assertIsInstance(m.detectors, list)
+
+    def test_set_range_from_start(self):
+        """set_range_from_start sets [inner, inner + range_width]."""
+        self.mock_pv.get.return_value = 0
+        self.wire.set_range_from_start("x", 5000)
+        calls = self.mock_pv.put.call_args_list
+        inner_put = call(value=5000)
+        outer_put = call(value=9000)
+        self.assertIn(inner_put, calls)
+        self.assertIn(outer_put, calls)
+
+    def test_set_range_from_start_custom_width(self):
+        """set_range_from_start respects custom range_width."""
+        self.mock_pv.get.return_value = 0
+        self.wire.set_range_from_start("y", 3000, range_width=6000)
+        calls = self.mock_pv.put.call_args_list
+        self.assertIn(call(value=3000), calls)
+        self.assertIn(call(value=9000), calls)
+
+    def test_set_range_from_start_invalid_width(self):
+        """set_range_from_start raises on non-positive range_width."""
+        with self.assertRaises(ValueError):
+            self.wire.set_range_from_start("x", 5000, range_width=0)
+
+    def test_center_range_on_mean(self):
+        """center_range_on_mean centers [mean-2000, mean+2000]."""
+        self.mock_pv.get.return_value = 0
+        self.wire.center_range_on_mean("x", 7000.0)
+        calls = self.mock_pv.put.call_args_list
+        self.assertIn(call(value=5000), calls)
+        self.assertIn(call(value=9000), calls)
+
+    def test_center_range_on_mean_rounds_float(self):
+        """center_range_on_mean rounds non-integer mean."""
+        self.mock_pv.get.return_value = 0
+        self.wire.center_range_on_mean("x", 7000.7)
+        calls = self.mock_pv.put.call_args_list
+        # round(7000.7) = 7001, inner = 7001-2000 = 5001, outer = 5001+4000 = 9001
+        self.assertIn(call(value=5001), calls)
+        self.assertIn(call(value=9001), calls)
+
+    def test_center_range_on_mean_invalid_width(self):
+        """center_range_on_mean raises on non-positive range_width."""
+        with self.assertRaises(ValueError):
+            self.wire.center_range_on_mean("x", 7000.0, range_width=-1)
