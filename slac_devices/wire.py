@@ -494,6 +494,8 @@ class Wire(Device):
         self, plane: str, inner: int, outer: int
     ) -> None:
         """Warn when the current plane configuration fails validation."""
+        if not self.scan_pulses or not self.beam_rate:
+            return
         try:
             self.validate_range_speed(plane, inner, outer)
         except ValueError as exc:
