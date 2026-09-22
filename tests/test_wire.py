@@ -261,22 +261,27 @@ class WireTest(TestCase):
                 self.assertEqual(result, 123, f"{prop} should return mocked value")
                 self.mock_pv.get.assert_called_once()
 
-    def test_position_buffer_defaults_trim_stale_true(self):
+    def test_position_buffer_calls_get(self):
         mock_buffer = Mock()
         self.wire.position_buffer(mock_buffer)
-        mock_buffer.get.assert_called_once_with("WSBP2:POSN", trim_stale=True)
+        mock_buffer.get.assert_called_once_with("WSBP2:POSN")
 
-    def test_position_buffer_allows_trim_stale_override(self):
+    def test_position_buffer_passes_trim_stale(self):
         mock_buffer = Mock()
-        self.wire.position_buffer(mock_buffer, trim_stale=False)
-        mock_buffer.get.assert_called_once_with("WSBP2:POSN", trim_stale=False)
+        self.wire.position_buffer(mock_buffer, trim_stale=True)
+        mock_buffer.get.assert_called_once_with("WSBP2:POSN", trim_stale=True)
 
     def test_position_buffer_passes_kwargs(self):
         mock_buffer = Mock()
         self.wire.position_buffer(mock_buffer, retries=3, retry_delay=1.0)
         mock_buffer.get.assert_called_once_with(
-            "WSBP2:POSN", retries=3, retry_delay=1.0, trim_stale=True
+            "WSBP2:POSN", retries=3, retry_delay=1.0
         )
+
+    def test_position_buffer_passes_trim_offset(self):
+        mock_buffer = Mock()
+        self.wire.position_buffer(mock_buffer, trim_offset=15)
+        mock_buffer.get.assert_called_once_with("WSBP2:POSN", trim_offset=15)
 
     def test_metadata_exists_and_type(self):
         """Wire has a valid metadata object"""

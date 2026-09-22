@@ -230,7 +230,6 @@ class Wire(Device):
         return self.controls_information.PVs.on_status.get()
 
     def position_buffer(self, buffer: Buffer, **kwargs):
-        kwargs.setdefault("trim_stale", True)
         return buffer.get(f"{self.controls_information.control_name}:POSN", **kwargs)
 
     def retract(self):
