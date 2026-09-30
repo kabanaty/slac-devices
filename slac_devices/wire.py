@@ -7,6 +7,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 import warnings
 from slac_devices.device import (
@@ -103,8 +104,8 @@ class TMITLossBPMs(BaseModel):
 
 
 class WireMetadata(Metadata):
-    detectors: List[str]
-    default_detector: str
+    detectors: Union[List[str], Dict[str, List[str]]]
+    default_detector: Union[str, Dict[str, str]]
     tmitloss: Optional[TMITLossBPMs] = None
     jitter_bpms: Optional[List[str]] = None
     charge_toroids: Optional[List[str]] = None
