@@ -37,8 +37,8 @@ class IntegerModel(BaseModel):
 
 
 class LBLMPVSet(PVSet):
-    gated_integral: PV
-    i0_loss: PV
+    gated_integral: Optional[PV] = None
+    i0_loss: Optional[PV] = None
     gain: PV
     bypass: PV
 
@@ -73,12 +73,18 @@ class LBLM(Device):
     @property
     def i0_loss(self):
         """Get I0 Loss value"""
-        return self.controls_information.PVs.i0_loss.get()
+        pv = self.controls_information.PVs.i0_loss
+        if pv is None:
+            return None
+        return pv.get()
 
     @property
     def gated_integral(self):
         """Get Gated Integral value"""
-        return self.controls_information.PVs.gated_integral.get()
+        pv = self.controls_information.PVs.gated_integral
+        if pv is None:
+            return None
+        return pv.get()
 
     @property
     def gain(self):
@@ -108,11 +114,17 @@ class LBLM(Device):
 
     def i0_loss_buffer(self, buffer: Buffer, **kwargs):
         """Retrieve I0 Loss data from timing buffer"""
-        return buffer.get(self.controls_information.PVs.i0_loss.pvname, **kwargs)
+        pv = self.controls_information.PVs.i0_loss
+        if pv is None:
+            raise ValueError("i0_loss PV is not configured for this LBLM")
+        return buffer.get(pv.pvname, **kwargs)
 
     def gated_integral_buffer(self, buffer: Buffer, **kwargs):
         """Get Gated Integral data from timing buffer"""
-        return buffer.get(self.controls_information.PVs.gated_integral.pvname, **kwargs)
+        pv = self.controls_information.PVs.gated_integral
+        if pv is None:
+            raise ValueError("gated_integral PV is not configured for this LBLM")
+        return buffer.get(pv.pvname, **kwargs)
 
 
 class LBLMCollection(BaseModel):
