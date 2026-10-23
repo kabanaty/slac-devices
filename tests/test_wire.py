@@ -6,7 +6,7 @@ import inspect
 
 # Local imports
 from slac_devices.reader import create_wire
-from slac_devices.wire import WireMetadata
+from slac_devices.wire import RangeStatus, SpeedState, Wire, WireMetadata
 
 
 class WireTest(TestCase):
@@ -41,12 +41,15 @@ class WireTest(TestCase):
                     "use_x_wire": "WSBP2:USEXWIRE",
                     "use_y_wire": "WSBP2:USEYWIRE",
                     "u_size": "WSBP2:UWIRESIZE",
+                    "u_speed_calc": "WSBP2:WIREUSPEED_CALC",
                     "u_wire_inner": "WSBP2:UWIREINNER",
                     "u_wire_outer": "WSBP2:UWIREOUTER",
                     "x_size": "WSBP2:XWIRESIZE",
+                    "x_speed_calc": "WSBP2:WIREXSPEED_CALC",
                     "x_wire_inner": "WSBP2:XWIREINNER",
                     "x_wire_outer": "WSBP2:XWIREOUTER",
                     "y_size": "WSBP2:YWIRESIZE",
+                    "y_speed_calc": "WSBP2:WIREYSPEED_CALC",
                     "y_wire_inner": "WSBP2:YWIREINNER",
                     "y_wire_outer": "WSBP2:YWIREOUTER",
                 },
@@ -236,6 +239,9 @@ class WireTest(TestCase):
             "speed_max",
             "speed_min",
             "temperature",
+            "x_speed_calc",
+            "y_speed_calc",
+            "u_speed_calc",
             "timeout",
             "x_size",
             "y_size",
@@ -270,3 +276,84 @@ class WireTest(TestCase):
         m = self.wire.metadata
         self.assertTrue(hasattr(m, "detectors"))
         self.assertIsInstance(m.detectors, list)
+
+
+class RangeStatusTest(TestCase):
+    def setUp(self) -> None:
+        self.wire = Mock(spec=Wire)
+        self.values = {
+            "x_wire_inner": 0,
+            "x_wire_outer": 1000,
+            "x_speed_calc": 500.0,
+            "beam_rate": 120.0,
+            "speed_floor": 100.0,
+            "speed_max": 1200.0,
+            "scan_pulses": 240,
+        }
+
+    def _status(self, **overrides) -> RangeStatus:
+        values = {**self.values, **overrides}
+        for name, value in values.items():
+            setattr(self.wire, name, value)
+        return Wire.range_status(self.wire, "x")
+
+    def test_ok(self):
+        status = self._status()
+        self.assertEqual(status.state, SpeedState.OK)
+        self.assertTrue(status.valid)
+
+    def test_too_fast(self):
+        status = self._status(x_speed_calc=1500.0)
+        self.assertEqual(status.state, SpeedState.TOO_FAST)
+        self.assertEqual(status.summary, "Too fast: range too large")
+        # width 1000 * 1200 / 1500 = 800; pulses must exceed 240 * 1500 / 1200 = 300
+        self.assertIn("less than 800 um", status.advice)
+        self.assertIn("at least 301", status.advice)
+
+    def test_too_slow(self):
+        status = self._status(x_speed_calc=50.0)
+        self.assertEqual(status.state, SpeedState.TOO_SLOW)
+        self.assertEqual(status.summary, "Too slow: range too small")
+        # width 1000 * 100 / 50 = 2000; pulses must be below 240 * 50 / 100 = 120
+        self.assertIn("more than 2000 um", status.advice)
+        self.assertIn("at most 119", status.advice)
+
+    def test_limits_are_exclusive(self):
+        self.assertEqual(self._status(x_speed_calc=1200.0).state, SpeedState.TOO_FAST)
+        self.assertEqual(self._status(x_speed_calc=100.0).state, SpeedState.TOO_SLOW)
+
+    def test_no_beam(self):
+        status = self._status(beam_rate=0)
+        self.assertEqual(status.state, SpeedState.NO_BEAM)
+        self.assertFalse(status.valid)
+
+    def test_bad_range(self):
+        status = self._status(x_wire_inner=1000, x_wire_outer=1000)
+        self.assertEqual(status.state, SpeedState.BAD_RANGE)
+
+    def test_speed_floor_uses_higher_limit(self):
+        self.wire.speed_min = 50
+        self.wire.mps_speed = 200
+        self.assertEqual(Wire.speed_floor.fget(self.wire), 200)
+        self.wire.mps_speed = 20
+        self.assertEqual(Wire.speed_floor.fget(self.wire), 50)
+
+    def test_invalid_planes_ignores_inactive_planes(self):
+        self.wire.active_profiles.return_value = ["x"]
+        self.wire.range_status.side_effect = lambda plane: self._status(
+            x_speed_calc=1500.0
+        )
+        invalid = Wire.invalid_planes(self.wire)
+        self.assertEqual([s.plane for s in invalid], ["x"])
+        self.wire.range_status.assert_called_once_with("x")
+
+    def test_too_slow_with_zero_speed_has_no_pulse_hint(self):
+        status = self._status(x_speed_calc=0.0)
+        self.assertEqual(status.state, SpeedState.TOO_SLOW)
+        self.assertNotIn("pulses", status.advice)
+
+    def test_numpy_values_are_accepted(self):
+        import numpy as np
+
+        status = self._status(x_speed_calc=np.float64(500.0), scan_pulses=np.int64(240))
+        self.assertEqual(status.scan_pulses, 240)
