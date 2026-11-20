@@ -212,3 +212,8 @@ class TestCreateManyDevices(unittest.TestCase):
 
     def test_empty_input_returns_empty_dict(self):
         self.assertEqual(create_many_devices([]), {})
+
+
+class TestCreateDevice(unittest.TestCase):
+    def test_unknown_name_returns_none(self):
+        self.assertIsNone(create_device("BAD-DEVICE-NAME"))

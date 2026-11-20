@@ -1,8 +1,8 @@
 from typing import Union, Optional
 from pydantic import ValidationError
+import pykern.sql_db
 import slac_db
 import slac_db.db_to_yaml
-import slac_db.device
 from slac_devices.screen import Screen, ScreenCollection
 from slac_devices.magnet import Magnet, MagnetCollection
 from slac_devices.wire import Wire, WireCollection
@@ -39,7 +39,19 @@ _CONSTRUCTOR_MAP = {
 
 
 def create_device(name):
-    data = slac_db.db_to_yaml.get_device(name)
+    """Create a device by MAD name.
+
+    Args:
+        name (str): MAD device name.
+
+    Returns:
+        Device model (e.g. Magnet, BPM, Wire), or None if the name is not
+        in slac_db or the device fails validation.
+    """
+    try:
+        data = slac_db.db_to_yaml.get_device(name)
+    except pykern.sql_db.NoRows:
+        data = None
     if data is None:
         print(f"Unrecognized name for device={name}")
         return None
@@ -53,10 +65,7 @@ def create_device(name):
 
 
 def create_many_devices(names):
-    """Create many devices by MAD name.
-
-    Looks up all names in slac_db with a single query, then creates each
-    known device with `create_device`.
+    """Create many devices by MAD name with `create_device`.
 
     Args:
         names (Iterable[str]): MAD device names. Duplicates are ignored.
@@ -65,13 +74,8 @@ def create_many_devices(names):
         dict: {name: device} in input order. Names not found in slac_db,
         or whose device fails validation, are omitted.
     """
-    names = list(dict.fromkeys(names))
-    known = slac_db.device.build_many_devices(names)
     devices = {}
-    for name in names:
-        if name not in known:
-            print(f"Unrecognized name for device={name}")
-            continue
+    for name in dict.fromkeys(names):
         device = create_device(name)
         if device is not None:
             devices[name] = device
