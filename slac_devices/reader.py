@@ -2,6 +2,7 @@ from typing import Union, Optional
 from pydantic import ValidationError
 import slac_db
 import slac_db.db_to_yaml
+import slac_db.device
 from slac_devices.screen import Screen, ScreenCollection
 from slac_devices.magnet import Magnet, MagnetCollection
 from slac_devices.wire import Wire, WireCollection
@@ -49,6 +50,32 @@ def create_device(name):
     except ValidationError as field_error:
         print(field_error)
         return None
+
+
+def create_many_devices(names):
+    """Create many devices by MAD name.
+
+    Looks up all names in slac_db with a single query, then creates each
+    known device with `create_device`.
+
+    Args:
+        names (Iterable[str]): MAD device names. Duplicates are ignored.
+
+    Returns:
+        dict: {name: device} in input order. Names not found in slac_db,
+        or whose device fails validation, are omitted.
+    """
+    names = list(dict.fromkeys(names))
+    known = slac_db.device.build_many_devices(names)
+    devices = {}
+    for name in names:
+        if name not in known:
+            print(f"Unrecognized name for device={name}")
+            continue
+        device = create_device(name)
+        if device is not None:
+            devices[name] = device
+    return devices
 
 
 def create_magnet(
